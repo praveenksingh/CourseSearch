@@ -107,23 +107,25 @@ def instructor_to_code(searchform, instructor):
 def _parse_course_listing(html):
     soup = _get_soup_from_html(html)
 
-    # Find all the course titles with href to course description Page
-    var = soup.find_all("th", {"class": "ddtitle"})
+    courses = soup.find_all("th", {"class": "ddtitle"})
+    for course in courses:
+        course_description = course.parent
 
-    # for each Course title, enter its description which and again inside by reading the "nttitle'
-    # class to get pre-requisites of the course.
-    for val in var:
-        link = val.find('a', href=True)
-        if link.get_text(strip=True):
-            course_info = link['href'].split('?')
-            soup_course_description = _get_soup_from_html(_post(course_info[0], course_info[1]).text)
-            course_link = soup_course_description.find("td", {"class": "nttitle"})
-            link_final = course_link.find('a', href=True)
-            course_page_link = link_final['href'].split('?')
-            soup_final_page = _get_soup_from_html(_post(course_page_link[0], course_page_link[1]).text)
-            print()
+        print(course.get_text)
+        for tr in course_description.find_next_siblings("tr"):
+            # exit if reached next course reached
+            if tr.find("th", {"class": "ddtitle"}):
+                break
 
-        print("")
+            # get all details for the course
+            tds = tr.find_all("td", {"class": "dddefault"})
+            for td in tds:
+                requisites = td.find_all("span", {"class": "fieldlabeltext"})
+                for requ in requisites:
+                    if 'Prerequisites' in requ.string:
+                        for required in requ.find_next_siblings("a"):
+                            print(required.text)
+
     return (None, None, None) # TODO: replace with your code
 
 

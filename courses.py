@@ -214,7 +214,9 @@ def coursesearch(termcode,
 # and outputs to the console a digraph of related courses
 # in DOT format
 def print_course_dot(*courseinfo):
-    dot = Digraph(comment='Course Relations')
+    dot = Digraph(name='G',  comment='Course Relations')
+    dot.attr(rankdir='LR')
+    dot.attr('node', width='5', height='1')
     node_names, labels, edges = courseinfo
     for i in range(len(node_names)):
         dot.node(name=node_names[i], label=labels[i])

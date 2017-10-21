@@ -145,8 +145,11 @@ def _parse_course_listing(html):
         node_lable_list.append(label)
         if value and value['requisites']:
             for values in value['requisites']:
-                edges_list.append((key_name, values))
-    graph_tuple = (node_name_list, node_lable_list, edges_list)
+                edges_list.append((values, key_name))
+
+    node_lable_list = ([x for _, x in sorted(zip(node_name_list, node_lable_list), key=lambda pair: pair[0])])
+    node_name_list = ([_ for _, x in sorted(zip(node_name_list, node_lable_list), key=lambda pair: pair[0])])
+    graph_tuple = (node_name_list, node_lable_list, sorted(edges_list))
     return graph_tuple
 
 

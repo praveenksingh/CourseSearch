@@ -131,7 +131,8 @@ def _parse_course_listing(html):
                             course_name_requisites['requisites'].append(required_course.replace(' ', '_'))
                             if required_course not in courses_dict:
                                 courses_dict[required_course] = {}
-        courses_dict[course_text[2].strip()] = course_name_requisites
+        if ' ' in course_text[2].strip():
+            courses_dict[course_text[2].strip()] = course_name_requisites
 
     node_name_list = []
     node_lable_list = []
@@ -145,7 +146,8 @@ def _parse_course_listing(html):
         node_lable_list.append(label)
         if value and value['requisites']:
             for values in value['requisites']:
-                edges_list.append((values, key_name))
+                if (values, key_name) not in edges_list:
+                    edges_list.append((values, key_name))
 
     node_lable_list = ([x for _, x in sorted(zip(node_name_list, node_lable_list), key=lambda pair: pair[0])])
     node_name_list = ([_ for _, x in sorted(zip(node_name_list, node_lable_list), key=lambda pair: pair[0])])

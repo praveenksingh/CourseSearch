@@ -3,6 +3,7 @@
 import sys
 import os
 import getopt
+from graphviz import Digraph
 
 import requests
 from bs4 import BeautifulSoup
@@ -105,13 +106,15 @@ def instructor_to_code(searchform, instructor):
 # parses the html of a course search, returns...
 # TODO: DOCUMENT RETURN WITH EXAMPLES HERE (must be a tuple)
 def _parse_course_listing(html):
-    soup = _get_soup_from_html(html)
-
+    soup = BeautifulSoup(html, "html.parser")
+    courses_dict = {}
     courses = soup.find_all("th", {"class": "ddtitle"})
     for course in courses:
         course_description = course.parent
-
-        print(course.get_text)
+        course_name_requisites = {}
+        course_text = course.text.split('-')
+        course_name_requisites['name'] = course_text[0].strip()
+        course_name_requisites['requisites'] = []
         for tr in course_description.find_next_siblings("tr"):
             # exit if reached next course reached
             if tr.find("th", {"class": "ddtitle"}):
@@ -121,16 +124,30 @@ def _parse_course_listing(html):
             tds = tr.find_all("td", {"class": "dddefault"})
             for td in tds:
                 requisites = td.find_all("span", {"class": "fieldlabeltext"})
-                for requ in requisites:
-                    if 'Prerequisites' in requ.string:
-                        for required in requ.find_next_siblings("a"):
-                            print(required.text)
+                for requisite in requisites:
+                    if 'prerequisites' in  requisite.string.lower() or 'corequisites' in requisite.string.lower():
+                        for required in requisite.find_next_siblings("a"):
+                            required_course = required.text.strip()
+                            course_name_requisites['requisites'].append(required_course.replace(' ', '_'))
+                            if required_course not in courses_dict:
+                                courses_dict[required_course] = {}
+        courses_dict[course_text[2].strip()] = course_name_requisites
 
-    return (None, None, None) # TODO: replace with your code
-
-
-def _get_soup_from_html(html):
-    return BeautifulSoup(html, "html.parser")
+    node_name_list = []
+    node_lable_list = []
+    edges_list = []
+    for key, value in courses_dict.items():
+        key_name = key.replace(' ', '_')
+        node_name_list.append(key_name)
+        label = key + '\n'
+        if value and value['name']:
+            label = label + value['name']
+        node_lable_list.append(label)
+        if value and value['requisites']:
+            for values in value['requisites']:
+                edges_list.append((key_name, values))
+    graph_tuple = (node_name_list, node_lable_list, edges_list)
+    return graph_tuple
 
 
 # execute a course search request
@@ -185,10 +202,6 @@ def coursesearch(termcode,
     params.extend([("sel_instr", val) for val in sel_instr])
     params.extend([("sel_seat", val) for val in sel_seat])
 
-    # TODO
-    # 1. Take function parameters and add to params
-    # 2. Submit form with parameters
-    # 3. Call _parse_course_listing to parse, return
     return _parse_course_listing(_post("NEUCLSS.p_class_search",params).text)
 
 ##############################################################################
@@ -197,8 +210,14 @@ def coursesearch(termcode,
 # takes in output of coursesearch
 # and outputs to the console a digraph of related courses
 # in DOT format
-def print_course_dot(courseinfo):
-    print("TODO")
+def print_course_dot(*courseinfo):
+    dot = Digraph(comment='Course Relations')
+    node_names, labels, edges = courseinfo
+    for i in range(len(node_names)):
+        dot.node(name=node_names[i], label=labels[i])
+    dot.edges(edges)
+    print(dot.source)
+
 
 ##############################################################################
 ##############################################################################
@@ -290,7 +309,7 @@ def main(argv):
     
     #####
     
-    # print_course_dot(*info)
+    print_course_dot(*info)
     
 if __name__ == "__main__":
     main(sys.argv[1:])
